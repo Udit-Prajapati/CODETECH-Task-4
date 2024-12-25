@@ -1,0 +1,144 @@
+create database movierental;
+Query OK, 1 row affected (0.03 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| library_db         |
+| librarydb          |
+| movierental        |
+| mysql              |
+| mysql_python       |
+| performance_schema |
+| studentrecordsmgmt |
+| sys                |
++--------------------+
+9 rows in set (0.04 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> CREATE TABLE Movies (
+    ->     MovieID INT AUTO_INCREMENT PRIMARY KEY,
+    ->     Title VARCHAR(255) NOT NULL,
+    ->     Genre VARCHAR(100),
+    ->     ReleaseYear YEAR,
+    ->     Stock INT DEFAULT 0,
+    ->     RentalPrice DECIMAL(5, 2)
+    -> );
+Query OK, 0 rows affected (0.05 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> create table customer(
+    -> CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+    -> FirstName VARCHAR(100) NOT NULL,
+    -> LastName VARCHAR(100) NOT NULL,
+    -> Email VARCHAR(255) UNIQUE,
+    -> Phone VARCHAR(20),
+    -> Address TEXT
+    -> );
+Query OK, 0 rows affected (0.05 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ show tables;
++-----------------------+
+| Tables_in_movierental |
++-----------------------+
+| customer              |
+| movies                |
++-----------------------+
+2 rows in set (0.05 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> CREATE TABLE Rentals (
+    ->     RentalID INT AUTO_INCREMENT PRIMARY KEY,
+    ->     CustomerID INT,
+    ->     MovieID INT,
+    ->     RentalDate DATE NOT NULL,
+    ->     DueDate DATE NOT NULL,
+    ->     Returned BOOLEAN DEFAULT FALSE,
+    ->     FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID),
+    ->     FOREIGN KEY (MovieID) REFERENCES Movies(MovieID)
+    -> );
+Query OK, 0 rows affected (0.06 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> CREATE TABLE Returns (
+    ->     ReturnID INT AUTO_INCREMENT PRIMARY KEY,
+    ->     RentalID INT,
+    ->     ReturnDate DATE NOT NULL,
+    ->     LateFee DECIMAL(5, 2) DEFAULT 0.00,
+    ->     FOREIGN KEY (RentalID) REFERENCES Rentals(RentalID)
+    -> );
+Query OK, 0 rows affected (0.04 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> INSERT INTO Movies (Title, Genre, ReleaseYear, Stock, RentalPrice)
+    -> VALUES ('Inception', 'Sci-Fi', 2010, 10, 3.50);
+Query OK, 1 row affected (0.03 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> INSERT INTO Customers (FirstName, LastName, Email, Phone, Address)
+    -> VALUES ('John', 'Doe', 'john.doe@example.com', '123-456-7890', '123 Main St');
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+start transaction;
+Query OK, 0 rows affected (0.00 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> select stock from movies where movieid = 1;
++-------+
+| stock |
++-------+
+|    10 |
++-------+
+1 row in set (0.01 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ update movies set stock = stock - 1 where movieid = 1;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
+    -> FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+    -> WHERE TABLE_NAME = 'Rentals';
++------------+-----------------+-----------------------+
+| TABLE_NAME | CONSTRAINT_NAME | REFERENCED_TABLE_NAME |
++------------+-----------------+-----------------------+
+| rentals    | PRIMARY         | NULL                  |
+| rentals    | rentals_ibfk_1  | customer              |
+| rentals    | rentals_ibfk_2  | movies                |
++------------+-----------------+-----------------------+
+3 rows in set (0.02 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> START TRANSACTION;
+Query OK, 0 rows affected (0.00 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ysql>
+mysql> -- Update Rentals table
+mysql> UPDATE Rentals SET Returned = TRUE WHERE RentalID = 1;
+Query OK, 0 rows affected (0.00 sec)
+Rows matched: 0  Changed: 0  Warnings: 0
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql>
+mysql> -- Increment movie stock
+mysql> UPDATE Movies SET Stock = Stock + 1 WHERE MovieID = (SELECT MovieID FROM Rentals WHERE RentalID = 1);
+Query OK, 0 rows affected (0.00 sec)
+Rows matched: 0  Changed: 0  Warnings: 0
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql>
+mysql> COMMIT;
+Query OK, 0 rows affected (0.00 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> SELECT * FROM Movies WHERE Stock > 0;
++---------+-----------+--------+-------------+-------+-------------+
+| MovieID | Title     | Genre  | ReleaseYear | Stock | RentalPrice |
++---------+-----------+--------+-------------+-------+-------------+
+|       1 | Inception | Sci-Fi |        2010 |     9 |        3.50 |
++---------+-----------+--------+-------------+-------+-------------+
+1 row in set (0.00 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> SELECT r.RentalID, m.Title, r.RentalDate, r.DueDate, r.Returned
+
+    -> FROM Rentals r
+    -> JOIN Movies m ON r.MovieID = m.MovieID
+    -> WHERE r.CustomerID = 1;
+Empty set (0.00 sec)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+mysql> SELECT SUM(LateFee) AS TotalLateFees FROM Returns;
++---------------+
+| TotalLateFees |
++---------------+
+|          NULL |
++---------------+
+1 row in set (0.02 sec)
